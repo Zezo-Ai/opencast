@@ -245,10 +245,11 @@ public final class SearchServiceIndex extends AbstractIndexProducer implements I
 
   private void indexMediaPackage(MediaPackage mediaPackage, AccessControlList acl)
           throws SearchException, UnauthorizedException, SearchServiceDatabaseException {
-    indexMediaPackage(mediaPackage, acl, null, null);
+    indexMediaPackage(mediaPackage, acl, null, null, securityService.getOrganization().getId());
   }
 
-  private void indexMediaPackage(MediaPackage mediaPackage, AccessControlList acl, Date modDate, Date delDate)
+  private void indexMediaPackage(MediaPackage mediaPackage, AccessControlList acl, Date modDate, Date delDate,
+      String orgId)
           throws SearchException, UnauthorizedException, SearchServiceDatabaseException {
     String mediaPackageId = mediaPackage.getIdentifier().toString();
     //If the entry has been deleted then there's *probably* no dc file to load.
@@ -275,7 +276,6 @@ public final class SearchServiceIndex extends AbstractIndexProducer implements I
       }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
-    String orgId = securityService.getOrganization().getId();
     SearchResult item = new SearchResult(SearchService.IndexEntryType.Episode, dc, acl, orgId, mediaPackage,
         null != modDate ? modDate.toInstant() : Instant.now(),
         null != delDate ? delDate.toInstant() : null);
@@ -476,7 +476,7 @@ public final class SearchServiceIndex extends AbstractIndexProducer implements I
             logger.debug("Updating series ACL with merged access control list: {}", seriesAcl);
 
             current.getAndIncrement();
-            indexMediaPackage(mediaPackage, acl, modificationDate, deletionDate);
+            indexMediaPackage(mediaPackage, acl, modificationDate, deletionDate, tuple.getB());
           } catch (SearchServiceDatabaseException | UnauthorizedException e) {
             logIndexRebuildError(logger, total, current.get(), e);
             //NB: Runtime exception thrown to escape the functional interfacing
